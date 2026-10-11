@@ -4,6 +4,14 @@
 
 No cloud storage or external server required. Just connect to the same network and send files directly between devices.
 
+## Screenshots
+
+<p align="center">
+   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/MainScreen.jpg" width="250" />
+   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/en_FilesToSend.jpg" width="250" />
+   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/en_SendingFiles.jpg" width="250" />
+</p>
+
 ## Features
 
 * 📱 Discover nearby devices on the local network
