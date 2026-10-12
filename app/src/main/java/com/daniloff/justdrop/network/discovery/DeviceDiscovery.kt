@@ -8,6 +8,7 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresExtension
 import com.daniloff.justdrop.R
+import com.daniloff.justdrop.data.DeviceIdProvider
 import com.daniloff.justdrop.model.DiscoveredDevice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,10 +29,14 @@ class DeviceDiscovery(val context: Context) {
     val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private var isStarted = false
+    private val deviceIdProvider = DeviceIdProvider(context)
+    private var thisDeviceId: String? = null
 
 
-    fun start(httpPort: Int) {
+    suspend fun start(httpPort: Int) {
         if (isStarted) return
+
+        thisDeviceId = deviceIdProvider.getDeviceId()
 
         isStarted = true
 
@@ -39,6 +44,7 @@ class DeviceDiscovery(val context: Context) {
             serviceName = context.getString(R.string.app_name)
             serviceType = "_http._tcp."
             port = httpPort
+            setAttribute("deviceId", thisDeviceId)
         }
 
         nsdManager.registerService(
@@ -46,7 +52,7 @@ class DeviceDiscovery(val context: Context) {
             NsdManager.PROTOCOL_DNS_SD,
             object : NsdManager.RegistrationListener {
                 override fun onRegistrationFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
-                    TODO("Not yet implemented")
+                    Log.e("Discovery", "Service registration failed: $errorCode")
                 }
 
                 override fun onServiceRegistered(serviceInfo: NsdServiceInfo?) {
@@ -54,14 +60,14 @@ class DeviceDiscovery(val context: Context) {
                 }
 
                 override fun onServiceUnregistered(serviceInfo: NsdServiceInfo?) {
-                    TODO("Not yet implemented")
+                    Log.d("Discovery", "Just Drop service unregistered")
                 }
 
                 override fun onUnregistrationFailed(
                     serviceInfo: NsdServiceInfo?,
                     errorCode: Int
                 ) {
-                    TODO("Not yet implemented")
+                    Log.e("Discovery", "Service unregistration failed: $errorCode")
                 }
             })
 
@@ -146,6 +152,13 @@ class DeviceDiscovery(val context: Context) {
             @RequiresExtension(extension = Build.VERSION_CODES.TIRAMISU, version = 7)
             override fun onServiceUpdated(serviceInfo: NsdServiceInfo) {
                 val address = getIpv4Address(serviceInfo) ?: return
+
+                val remoteDeviceId = serviceInfo.attributes["deviceId"]
+                    ?.toString(Charsets.UTF_8)
+
+                if (remoteDeviceId != null && remoteDeviceId == thisDeviceId) {
+                    return
+                }
 
                 callbackAddresses[this] = address
 
